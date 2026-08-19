@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>参考卡 0002 · 设计模式速查（dsh 实例对照）</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main>
+
+<p class="kicker">dsh 精读课程 · 参考卡</p>
+<h1>0002 · 设计模式速查（dsh 实例对照）</h1>
+<p class="lesson-meta">你说过设计模式基础薄弱——这张卡只收 dsh 里真实出现的模式，每个配「一句话 + 类比 + 在哪 + 何时用」。系统学习见 <a href="https://refactoringguru.cn/design-patterns">Refactoring.Guru（中文）</a></p>
+
+<div class="box note">
+  <p class="box-title">先建立一个观念</p>
+  <p>模式不是要背的教条，是<strong>给反复出现的解法起的名字</strong>。价值在于：① 你能站在前人肩膀上（问题已有成熟解）；② 你和别人交流时一个词顶十句话（"这里用注册表"）。读 dsh 时拿着这张卡对照，比先啃一本模式书有效得多。</p>
+</div>
+
+<h2>架构级模式</h2>
+<dl class="gloss">
+  <dt id="microkernel">微内核 / 插件架构（Microkernel）</dt>
+  <dd>核心只提供「挂载与生命周期」规则，所有功能都是挂上来的插件。<br>
+  <strong>类比</strong>：插线板——插线板自己不制冷也不发热，但插上冰箱就是厨房，插上台钻就是工房。<br>
+  <strong>dsh 在哪</strong>：整个产品；连 agent 循环本身都是插件（Cordis 框架 = 插线板）。<br>
+  <strong>何时用</strong>：功能会持续增加、且允许第三方扩展的系统。</dd>
+
+  <dt id="registry">注册表（Registry）</dt>
+  <dd>维护一张「名字 → 实现」的表，新增能力 = 往表里登记一条，不动任何现有代码。<br>
+  <strong>类比</strong>：图书馆目录卡——新书登记入册，借阅者按名检索。<br>
+  <strong>dsh 在哪</strong>：<code>AgentRegistry</code>（ctx.agents）、<code>LlmRuntime.adapters</code>、<code>ToolRuntime</code> 的分层注册表。<br>
+  <strong>何时用</strong>：实现会不断增多、按名取用的场景。你写 YOLO 推理工具集时，"模型名 → 加载器" 就是天然注册表。</dd>
+
+  <dt id="event-sourcing">事件溯源（Event Sourcing）</dt>
+  <dd>不存"当前状态"，只追加"发生过的事件"；状态 = 对事件流的函数。<br>
+  <strong>类比</strong>：TensorBoard——训练循环只往 event 文件追加记录，曲线是看板事后算出来的。<br>
+  <strong>dsh 在哪</strong>：<code>Session</code>（session/index.ts:425），<code>deriveMessages()</code> 投影模型历史。<br>
+  <strong>何时用</strong>：需要完整审计、回放、任意时点 fork 的场景。</dd>
+
+  <dt id="layered-config">分层配置（Layered Configuration）</dt>
+  <dd>配置按层叠加，后层覆盖前层，最终值 = 逐层合并的结果。<br>
+  <strong>类比</strong>：VSCode 设置——默认值 → 用户设置 → 工作区设置 → 命令行参数。<br>
+  <strong>dsh 在哪</strong>：bundle → profile patch → home patch → <code>--patch</code>（profile-boot.ts）。<br>
+  <strong>何时用</strong>：发行方默认值 + 用户定制 + 命令行临时覆盖共存的产品。</dd>
+</dl>
+
+<h2>对象协作模式</h2>
+<dl class="gloss">
+  <dt id="service-locator">服务定位器 / 依赖注入（Service Locator / DI）</dt>
+  <dd>对象不自己 new 依赖，而是从一个容器按名领取（定位器），或声明后由框架送上门（注入）。<br>
+  <strong>类比</strong>：外包团队 vs 自建部门——要用设计师，打电话给平台派一个，而不是自己招聘培养。<br>
+  <strong>dsh 在哪</strong>：<code>ctx.tools</code> 按名领取；<code>static inject = ['systemPrompt']</code> 声明后框架保证就绪。<br>
+  <strong>何时用</strong>：依赖多、依赖会换、要写测试（测试时注入假实现）。</dd>
+
+  <dt id="observer">观察者 / 发布-订阅（Observer / Pub-Sub）</dt>
+  <dd>生产者只管"喊一嗓子"，不认识谁在听；订阅者各自响应。<br>
+  <strong>类比</strong>：广播电台——电台不知道收音机在哪，打开的人自己听。<br>
+  <strong>dsh 在哪</strong>：Cordis <code>EventsService</code>（events.ts:131），<code>session/event</code> 广播。<br>
+  <strong>何时用</strong>：一件事发生后有多个互不相识的消费者。C 里你写过的回调函数是最简版。</dd>
+
+  <dt id="strategy">策略（Strategy）</dt>
+  <dd>把"做一件事的多种做法"各封装成同类，运行时换一个就换整套行为。<br>
+  <strong>类比</strong>：换镜头——相机机身不动，换广角/长焦，拍法完全不同。<br>
+  <strong>dsh 在哪</strong>：<code>LlmAdapter</code> 抽象类（llm/src/index.ts:180），llm-deepseek、llm-pi-ai 各是一个策略；沙箱后端同理。<br>
+  <strong>何时用</strong>：同一接口下有多种算法/提供方。深度学习里 optimizer（SGD/Adam）就是策略。</dd>
+
+  <dt id="middleware">中间件 / 职责链（Middleware / Chain of Responsibility）</dt>
+  <dd>请求依次穿过一串处理者，每个可加工、可拦截、可放行。<br>
+  <strong>类比</strong>：流水线安检——第一道查票、第二道扫包、第三道手检，任何一环可拦下你。<br>
+  <strong>dsh 在哪</strong>：waterfall 事件（<code>agent/pre-step</code>、<code>llm/stream</code>、<code>tools/pre-execute → execute → post-execute</code>），监听器必须调 <code>next()</code> 放行。<br>
+  <strong>何时用</strong>：给既有流程加横切逻辑（日志、审批、重试）而不改流程本身。Express/Koa 的中间件同一血统。</dd>
+
+  <dt id="factory">工厂（Factory）</dt>
+  <dd>把"造对象"本身封装成可注册的函数，调用方只说要什么，不关心怎么造。<br>
+  <strong>类比</strong>：代工厂——你下单说"要 1000 件 T 恤"，不关心哪条产线生产。<br>
+  <strong>dsh 在哪</strong>：<code>AgentFactory</code> 由 agent-loop 注册进 AgentRegistry（注册表自己不构造 agent——依赖倒置）。<br>
+  <strong>何时用</strong>：构造过程复杂、或构造权要交给第三方。</dd>
+
+  <dt id="handle">句柄 / 可释放资源（Handle / Disposable）</dt>
+  <dd>每项注册返回一个"回执"，持回执可随时撤销；销毁按逆序回滚。<br>
+  <strong>类比</strong>：酒店房卡押金——入住登记一笔账，退房按记录逐笔结清。<br>
+  <strong>dsh 在哪</strong>：Cordis 每个注册项都返回 dispose 函数（fiber.ts 收集、逆序回滚）；<code>AdapterRegistrationHandle.replace()</code> 原子换新。<br>
+  <strong>何时用</strong>：任何"申请了要归还"的资源（文件、监听器、定时器）。C 的 free、Python 的 <code>with</code> 是其远亲。</dd>
+</dl>
+
+<h2>语言级技巧（TypeScript）</h2>
+<dl class="gloss">
+  <dt id="proxy-pattern">Proxy（JS 语言特性）</dt>
+  <dd>一个对象站在目标对象前面，拦截对它的一切操作（读属性、调用…）。<br>
+  <strong>类比</strong>：经纪人——找明星办事都经过经纪人，他能拦截、转达、附加条件。<br>
+  <strong>dsh 在哪</strong>：<code>Context</code> 本身就是 Proxy（context.ts:74）——读 <code>ctx.tools</code> 时被拦截去查服务表。<br>
+  <strong>何时用</strong>：想给对象访问加统一逻辑（懒加载、权限、日志）。</dd>
+
+  <dt id="discriminated-union">可辨识联合（Discriminated Union）</dt>
+  <dd>多种形状共用一个"标签字段"（如 <code>kind</code>），检查标签后编译器自动收窄类型。<br>
+  <strong>类比</strong>：快递单——先看单子上的"类型"（文件/易碎/冷藏），就知道该怎么处理。<br>
+  <strong>dsh 在哪</strong>：到处都是。<code>type Phase</code>（agent.ts:38）：<code>idle | maintenance | running</code>，各带不同字段。<br>
+  <strong>何时用</strong>：一件事有多种互斥的形态（C 的 struct+tag、Python 的 sum-type dataclass 手工模拟）。</dd>
+</dl>
+
+<div class="box source">
+  <p class="box-title">延伸信源</p>
+  <p>系统学习：Refactoring.Guru 中文站（每个模式有代码与图）。本卡所选条目均已在 dsh 源码中定位，读码遇到时回来翻——比空学模式快十倍。</p>
+</div>
+
+</main>
+</body>
+</html>

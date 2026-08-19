@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 2 课 · 把 dsh 跑起来，亲眼看一个轮次</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main>
+
+<p class="kicker">DeepSeek Harness 精读 · 阶段 0 · 地图与运行</p>
+<h1>第 2 课 · 把 dsh 跑起来，亲眼看一个轮次</h1>
+<p class="lesson-meta">约 25 分钟 ｜ 动手实验课 ｜ 前置：完成第 1 课</p>
+
+<div class="box mission">
+  <p class="box-title">为什么是这一课</p>
+  <p>上一课你拿到的是解剖图，这一课是<strong>活体观察</strong>。从此课程里每个抽象概念（事件、工具调用、插件树）你都能在真实的运行时里指认出来——这是「读懂源码」和「背下名词」的分水岭。</p>
+</div>
+
+<h2><span class="sec-no">§0</span>准备（2 分钟）</h2>
+<ul>
+  <li>安装 Node.js（LTS 版本即可），终端里 <code>node --version</code> 能出版本号就行。</li>
+  <li><strong>可选但强烈推荐</strong>：一个 DeepSeek API Key（在 platform.deepseek.com 注册、充值几块钱）。没有 Key 也能完成实验一和实验四，但看不到完整的模型轮次。</li>
+</ul>
+
+<h2><span class="sec-no">§1</span>实验一：启动（3 分钟）</h2>
+<p>在任意目录的终端里运行：</p>
+<pre><code>npx @deepseek-ai/dsh web</code></pre>
+<p>首次运行会下载安装包，稍等片刻。然后浏览器打开 <code>http://127.0.0.1:3080</code>。如果配了 API Key，在设置页的「模型提供方」里填入（带截图的官方指南：<a href="../deepseek-harness/docs/user/guide/providers.zh.md">docs/user/guide/providers.zh.md</a>）。</p>
+
+<h2><span class="sec-no">§2</span>实验二：触发一个真实轮次（5 分钟）</h2>
+<p>新建会话，给 agent 一个<strong>必须用工具</strong>才能完成的小任务，比如：</p>
+<pre><code>列出当前目录下的所有文件，数出一共有多少个</code></pre>
+<p>在 UI 里观察它工作：你会看到模型「调用工具」（读目录/执行命令），工具返回结果，模型再基于结果说话。<strong>这就是第 1 课那张循环图的活体</strong>：一次用户输入 = 一个轮次（turn），期间模型请求了几次 = 几个步骤（step）。</p>
+
+<h2><span class="sec-no">§3</span>实验三：解剖会话日志（8 分钟）</h2>
+<p>刚才那个轮次被完整记录在磁盘上了。去 Harness home 找它：</p>
+<pre><code>Windows: C:\Users\&lt;你&gt;\.dsh
+macOS / Linux: ~/.dsh</code></pre>
+<p>在这个目录里探索，找到会话的 <code>.jsonl</code> 文件（每行一个 JSON 事件的日志），用编辑器打开你刚才那个会话的文件，按顺序找这些事件：</p>
+
+<table>
+  <thead><tr><th>事件</th><th>含义</th><th>观察点</th></tr></thead>
+  <tbody>
+    <tr><td><code>turn/start</code> / <code>turn/end</code></td><td>轮次边界</td><td>一个轮次包住了中间所有事件</td></tr>
+    <tr><td><code>user/message</code></td><td>你的输入</td><td>原文被记录</td></tr>
+    <tr><td><code>assistant/chunk</code></td><td>流式碎片</td><td>一串小事件，拼起来才是完整回复——为了保真回放</td></tr>
+    <tr><td><code>assistant/message</code></td><td>完整助手消息</td><td>chunk 流的终点</td></tr>
+    <tr><td><code>tool/call</code> + <code>tool/result</code></td><td>工具调用与结果</td><td>成对出现，中间隔着执行过程</td></tr>
+  </tbody>
+</table>
+
+<p>三个思考观察（答案都在第 8 课，先自己看）：</p>
+<ol>
+  <li>事件是<strong>只追加</strong>的：你从头读到尾，就是在重放这个会话的时间线。</li>
+  <li>每个事件都带一个类似 <code>type</code> 的标签字段——这就是<a href="../reference/0002-design-patterns.html#discriminated-union">可辨识联合</a>在运行时的样子：先看标签，才知道这条记录有哪些字段。</li>
+  <li><code>tool/call</code> 和 <code>tool/result</code> 之间发生了什么？那是 <code>ctx.tools</code> 执行流水线的工作，第 12 课解剖。</li>
+</ol>
+
+<h2><span class="sec-no">§4</span>实验四：看插件树的最终形态（5 分钟）</h2>
+<p>还记得架构文档那句「各层按顺序应用」让你困惑吗？现在看活体：</p>
+<pre><code>npx @deepseek-ai/dsh --profile web --dump-config</code></pre>
+<p>它打印的是<strong>bundle → profile patch → home patch → --patch 逐层叠加后的最终插件树</strong>，大约 70 行。你看到的任何一行，都可以被你自己的 patch 按 id 替换掉。</p>
+
+<div class="box note">
+  <p class="box-title">观察点（Windows 用户彩蛋）</p>
+  <p>在这棵树里找 shell 相关的行：Windows 上你会看到 <code>pwsh</code>（PowerShell）工具行，而 Linux/macOS 上同一位置是 <code>bash</code> 行——因为出厂 patch 里写了平台条件表达式，每个系统恰好挂载一个 shell 栈。<strong>这就是「patch 不只是开关，还能带逻辑」的实证。</strong></p>
+</div>
+
+<h2>自测：三道题</h2>
+
+<div class="quiz">
+  <p class="quiz-question">Q1. 日志中 tool/call 与 tool/result 之间的实际执行，由谁负责？</p>
+  <div class="quiz-options">
+    <button>模型在服务端执行后返回</button>
+    <button>Web UI 的前端代码执行</button>
+    <button data-correct>ctx.tools 的执行流水线</button>
+    <button>ctx.agents 注册表代为执行</button>
+  </div>
+  <p class="quiz-feedback why" hidden>对。模型只「请求」调用工具（tool/call），真正执行的是 harness 侧的 ToolRuntime 流水线（pre-execute → execute → post-execute），完成后写入 tool/result。模型没有任何执行权——这正是 harness 存在的意义。</p>
+</div>
+
+<div class="quiz">
+  <p class="quiz-question">Q2. 保存 assistant/chunk 事件（流式碎片）的主要价值是什么？</p>
+  <div class="quiz-options">
+    <button>减少会话日志文件体积</button>
+    <button>提高模型生成回复速度</button>
+    <button>触发其他事件向外广播</button>
+    <button data-correct>原样保存流式输出碎片</button>
+  </div>
+  <p class="quiz-feedback why" hidden>对。架构文档「会话日志」一节：原始 assistant/chunk 事件保证<strong>回放和 UI 保真</strong>——不存储任何"加工后的摘要"，回放时看到的就是当时发生的一切。体积换保真，是有意的权衡。</p>
+</div>
+
+<div class="quiz">
+  <p class="quiz-question">Q3. --dump-config 打印出来的插件树是什么？</p>
+  <div class="quiz-options">
+    <button>base 组合包的出厂原始内容</button>
+    <button>npm 已经安装好的包清单</button>
+    <button data-correct>各层叠加后的最终插件树</button>
+    <button>你 home 目录里的 patch 文件</button>
+  </div>
+  <p class="quiz-feedback why" hidden>对。它打印的是 bundle → profile patch → home patch → --patch <strong>逐层叠加后的最终结果</strong>。任何一行都可被更上层的 patch 按 id 替换——这就是你上一课问的「各层按顺序应用」的活体答案。</p>
+</div>
+
+<h2>收尾任务（2 分钟）</h2>
+<ul class="checklist">
+  <li>确认你完成四个实验并在日志里亲眼见到全部 7 种事件。</li>
+  <li>再打开 <a href="../deepseek-harness/packages/core/agent-loop/src/agent.ts">agent.ts</a> 第 38–46 行的 <code>type Phase</code>。对照你的 jsonl：<strong>Phase 的哪个分支的 turn/step 计数，对应你日志里 step 序号的递增？</strong>下一课我们开始把你会的 C/Python 语法映射到 TypeScript，目标就是读懂这十行。</li>
+  <li>术语模糊时翻<a href="../reference/0001-dsh-glossary.html">术语卡</a>；模式对照翻<a href="../reference/0002-design-patterns.html">设计模式卡</a>。</li>
+</ul>
+
+<div class="box source">
+  <p class="box-title">本课推荐精读（一手信源）</p>
+  <p><a href="../deepseek-harness/docs/architecture.zh.md">docs/architecture.zh.md</a> 的「会话日志」与「Profile 与组合包」两节（第二遍读，这次你会不停点头）。UI 细节查 <a href="../deepseek-harness/docs/user/guide/index.zh.md">docs/user/guide/index.zh.md</a>。</p>
+</div>
+
+<div class="ask-reminder">
+  💬 <strong>我是你的导师，不是讲义。</strong>实验跑不起来、日志找不到、某个事件看不懂——直接回来问我，卡住超过 10 分钟就该问了。
+</div>
+
+<div class="lesson-nav">
+  <a href="0001-what-is-dsh-map.html">← 第 1 课 · dsh 是什么</a>
+  <span class="next">下一课（预告）：TypeScript 速成——把你的 C/Python 迁移过来 →</span>
+</div>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

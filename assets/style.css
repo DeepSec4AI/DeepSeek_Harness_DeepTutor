@@ -1,0 +1,310 @@
+/* ============================================================
+   dsh 精读课程 · 共享样式表
+   所有 lessons/ 与 reference/ 文档引用此文件，保持全书一致。
+   风格：Tufte 式纸面排版，中文优先的字体栈，打印友好。
+   ============================================================ */
+
+:root {
+  --paper: #fffdf8;
+  --ink: #21201c;
+  --ink-soft: #6b675e;
+  --accent: #8b2846;
+  --accent-bg: #f7ecf0;
+  --code-bg: #f4f1e9;
+  --border: #e3ded2;
+  --correct: #1a7f4b;
+  --correct-bg: #e9f4ee;
+  --wrong: #a03030;
+  --wrong-bg: #f9ecec;
+  --task-bg: #eef3f8;
+  --serif: "Noto Serif SC", "Source Serif 4", "Songti SC", "SimSun", Georgia, serif;
+  --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 17px; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+
+/* ---------- 头部 ---------- */
+.kicker {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin: 0 0 0.3rem;
+}
+
+h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0 0 0.4rem;
+}
+
+.lesson-meta {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 0 0 2.2rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- 标题 ---------- */
+h2 {
+  font-size: 1.28rem;
+  margin: 2.6rem 0 0.8rem;
+  line-height: 1.4;
+}
+
+h2 .sec-no {
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  margin-right: 0.5rem;
+}
+
+h3 { font-size: 1.05rem; margin: 1.8rem 0 0.5rem; }
+
+/* ---------- 正文元素 ---------- */
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid #d9b9c4; }
+a:hover { border-bottom-color: var(--accent); }
+
+p { margin: 0.8rem 0; }
+
+strong { font-weight: 700; }
+
+ul, ol { padding-left: 1.4rem; }
+li { margin: 0.35rem 0; }
+li::marker { color: var(--accent); }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
+pre code { background: none; border: none; padding: 0; font-size: 0.82rem; }
+
+pre.diagram {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: #fbfaf5;
+}
+
+/* ---------- 表格 ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  margin: 1.2rem 0;
+}
+
+th {
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--ink);
+  padding: 0.5rem 0.6rem;
+}
+
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  vertical-align: top;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+/* ---------- 提示框 ---------- */
+.box {
+  border-radius: 6px;
+  padding: 0.9rem 1.2rem;
+  margin: 1.4rem 0;
+  font-size: 0.95rem;
+}
+
+.box .box-title {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.3rem;
+}
+
+.box.correction { background: var(--accent-bg); border-left: 4px solid var(--accent); }
+.box.correction .box-title { color: var(--accent); }
+
+.box.note { background: var(--task-bg); border-left: 4px solid #3d6a96; }
+.box.note .box-title { color: #3d6a96; }
+
+.box.mission { background: #f2f4ef; border-left: 4px solid #5c7443; }
+.box.mission .box-title { color: #5c7443; }
+
+.box.source { background: #f8f4ea; border-left: 4px solid #a07d2e; }
+.box.source .box-title { color: #a07d2e; }
+
+/* ---------- 测验组件 ---------- */
+.quiz {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.1rem 1.3rem;
+  margin: 1.6rem 0;
+  background: #fffefb;
+}
+
+.quiz-question {
+  font-family: var(--sans);
+  font-weight: 600;
+  margin: 0 0 0.8rem;
+}
+
+.quiz-options { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.quiz-options button {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  text-align: left;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  line-height: 1.6;
+}
+
+.quiz-options button:hover:not(:disabled) { border-color: var(--accent); }
+
+.quiz-options button.correct {
+  background: var(--correct-bg);
+  border-color: var(--correct);
+  color: var(--correct);
+  font-weight: 600;
+}
+
+.quiz-options button.wrong {
+  background: var(--wrong-bg);
+  border-color: var(--wrong);
+  color: var(--wrong);
+  text-decoration: line-through;
+}
+
+.quiz-options button:disabled { cursor: default; opacity: 1; }
+.quiz-options button.wrong:disabled { opacity: 0.75; }
+
+.quiz-feedback {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  margin: 0.9rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.75;
+}
+
+.quiz-feedback.hint { background: var(--wrong-bg); color: var(--wrong); }
+.quiz-feedback.why { background: var(--correct-bg); color: #14532d; }
+
+/* ---------- 任务清单 ---------- */
+.checklist {
+  list-style: none;
+  padding-left: 0;
+}
+
+.checklist li {
+  padding-left: 1.8rem;
+  position: relative;
+  margin: 0.6rem 0;
+}
+
+.checklist li::before {
+  content: "☐";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
+/* ---------- 页脚导航 ---------- */
+.lesson-nav {
+  margin-top: 3.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lesson-nav .next { margin-left: auto; text-align: right; }
+
+.ask-reminder {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  background: var(--accent-bg);
+  border-radius: 6px;
+  padding: 0.9rem 1.2rem;
+  margin-top: 2.5rem;
+}
+
+/* ---------- 参考卡（reference/）专用 ---------- */
+dl.gloss dt {
+  font-family: var(--sans);
+  font-weight: 700;
+  margin-top: 1.3rem;
+}
+
+dl.gloss dd {
+  margin: 0.25rem 0 0 0;
+  padding-left: 0;
+  font-size: 0.95rem;
+}
+
+dl.gloss dd .src {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  display: block;
+  margin-top: 0.15rem;
+}
+
+/* ---------- 打印 ---------- */
+@media print {
+  html { font-size: 12.5px; }
+  main { max-width: none; padding: 0; }
+  .quiz-options button { border: 1px solid #999; }
+  a { border-bottom: none; color: var(--ink); }
+  .lesson-nav, .ask-reminder { display: none; }
+}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>参考卡 0001 · dsh 核心术语表</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main>
+
+<p class="kicker">dsh 精读课程 · 参考卡</p>
+<h1>0001 · dsh 核心术语表</h1>
+<p class="lesson-meta">速查用 · 术语拿不准先查这里 · 与官方 <a href="../deepseek-harness/docs/glossary.zh.md">docs/glossary.zh.md</a> 对照</p>
+
+<h2>项目与框架</h2>
+<dl class="gloss">
+  <dt id="dsh">dsh / DeepSeek Harness</dt>
+  <dd>DeepSeek AI 开源的 agent harness（智能体运行时框架），提供 CLI 与 Web UI，MIT 协议。<span class="src">README.zh.md</span></dd>
+
+  <dt id="harness">agent harness（智能体运行时）</dt>
+  <dd>驱动 LLM agent 循环的程序：组装提示词 → 调模型 → 执行工具调用 → 把结果喂回模型。区别于「评测框架」。</dd>
+
+  <dt id="cordis">Cordis</dt>
+  <dd>dsh 底层的插件框架（vendored，源码在 <code>vendor/cordis/src/</code>，约 2700 行）。插件向共享上下文贡献服务、类型化事件和可逆副作用。<span class="src">docs/cordis-primer.zh.md</span></dd>
+
+  <dt id="plugin">插件（plugin）</dt>
+  <dd>向 Cordis 树贡献内容的基本单元，可以是一个函数，也可以是 <code>Service</code> 子类。dsh 的每一部分都是插件，包括 agent loop 本身。</dd>
+
+  <dt id="ctx">Context / ctx</dt>
+  <dd>所有插件共享的容器（一个 Proxy 对象），服务按稳定键认领位置，如 <code>ctx.tools</code>、<code>ctx.llm</code>。<span class="src">vendor/cordis/src/context.ts</span></dd>
+
+  <dt id="service">Service（服务）</dt>
+  <dd>挂在 ctx 键上的具名能力基类：<code>class ToolRuntime extends Service</code>。随插件卸载自动注销。</dd>
+
+  <dt id="fiber">Fiber</dt>
+  <dd>插件生命周期单元：跟踪状态、收集副作用、卸载时按逆序回滚全部注册。<span class="src">vendor/cordis/src/fiber.ts</span></dd>
+
+  <dt id="inject">inject</dt>
+  <dd>插件声明依赖的方式：<code>static inject = ['systemPrompt']</code>，框架保证被依赖服务就绪后才启动。</dd>
+</dl>
+
+<h2>会话与事件</h2>
+<dl class="gloss">
+  <dt id="session">Session（会话）</dt>
+  <dd>只追加（append-only）的 <code>SessionEvent</code> 日志。UI、fork、恢复、遥测、回放全部从它派生。<span class="src">packages/core/session/src/index.ts:425</span></dd>
+
+  <dt id="event-sourcing">事件溯源（event sourcing）</dt>
+  <dd>不直接存「当前状态」，只存「发生过的事件」；需要状态时从事件流投影。dsh 用 <code>deriveMessages()</code> 从日志投影模型历史。</dd>
+
+  <dt id="invariant">模型可见即已记录</dt>
+  <dd>dsh 的核心不变量：抵达模型请求的一切都必须能从日志重建，有运行时断言检查。新增模型可见输入 ⇒ 必须新增会话事件。<span class="src">docs/architecture.zh.md</span></dd>
+
+  <dt id="event-domains">三大事件域</dt>
+  <dd>① 会话事件（持久事实，写入日志）；② Agent 事件 <code>agent/*</code>（观察/拦截进行中的工作）；③ 能力事件（向 seam 附加策略与适配器）。</dd>
+
+  <dt id="waterfall">waterfall（瀑布式分发）</dt>
+  <dd>事件总线的一种模式：监听器收到 <code>(...args, next)</code>，必须调用 <code>next()</code> 才继续向下游传递，可拦截可改写。另有 emit / parallel / serial 三种模式。<span class="src">docs/cordis-primer.zh.md</span></dd>
+</dl>
+
+<h2>Agent 与循环</h2>
+<dl class="gloss">
+  <dt id="agent">Agent（接口）</dt>
+  <dd>活跃智能体的契约：<code>send / followup / steer / inject / cancel / whenIdle</code> 等。纯接口，无继承树；<code>ReactLoopAgent</code> 是默认实现。<span class="src">packages/core/agent/src/runtime-types.ts:64</span></dd>
+
+  <dt id="turn-step">轮次（turn）与步骤（step）</dt>
+  <dd>一个步骤 = 一次模型请求 + 它调用的工具；一个轮次 = 零个或多个步骤，从领取首条输入前开启，到不再欠任何工作时关闭。</dd>
+
+  <dt id="react-loop-agent">ReactLoopAgent</dt>
+  <dd>默认驱动器（496 行），实现 turn/step 状态机。<span class="src">packages/core/agent-loop/src/agent.ts:64</span></dd>
+
+  <dt id="phase">Phase</dt>
+  <dd>驱动器的三态：<code>idle</code>（空闲）｜<code>maintenance</code>（维护中）｜<code>running</code>（跑轮次）。用可辨识联合定义。<span class="src">agent.ts:38</span></dd>
+
+  <dt id="inbox">Inbox</dt>
+  <dd>驱动器的双通道输入队列：<code>next-turn</code>（开启新轮次的消息）与 <code>next-step</code>（注入当前轮次的上下文/转向）。</dd>
+
+  <dt id="steering">steering（转向）</dt>
+  <dd>Agent 运行中插入新指令、改变其行为方向的机制；与 followup（排队下轮）、inject（注入上下文）相区分。</dd>
+</dl>
+
+<h2>工具与模型</h2>
+<dl class="gloss">
+  <dt id="tool">工具（Tool）</dt>
+  <dd>面向模型的能力，由 <code>ToolDefinition</code> 描述（名字、JSON schema、执行函数），注册到 <code>ctx.tools</code>。</dd>
+
+  <dt id="tool-runtime">ToolRuntime</dt>
+  <dd><code>ctx.tools</code> 背后的服务：作用域化注册表 + 执行流水线（<code>tools/pre-execute → execute → post-execute</code>）。<span class="src">packages/core/tools/src/index.ts:787</span></dd>
+
+  <dt id="system-prompt">SystemPrompt</dt>
+  <dd><code>ctx.systemPrompt</code>：有序的提示词分片注册表，每次请求前组装成系统提示词（含工具 schema）。</dd>
+
+  <dt id="llm-adapter">LlmAdapter（模型适配器）</dt>
+  <dd>模型提供方的接缝：抽象类，唯一必须实现的方法是 <code>stream(options)</code> 返回异步流。已有 <code>llm-deepseek</code>、<code>llm-pi-ai</code> 等实现。<span class="src">packages/llm/llm/src/index.ts:180</span></dd>
+
+  <dt id="seam">能力 seam（接缝）</dt>
+  <dd>一项可替换能力的完整设计，三角色：Service Definition（声明接口）/ Provider（实现）/ Consumer（使用，通常是工具）。<span class="src">docs/capability-seams.zh.md</span></dd>
+</dl>
+
+<h2>组合与配置</h2>
+<dl class="gloss">
+  <dt id="plugin-row">插件行（row / 条目）</dt>
+  <dd>插件清单里的一行：<code>{ id: 名字, name: npm 包名, config: 配置 }</code>。id 是各层 patch 定位它的锚点。最终插件树 = 行的列表。</dd>
+
+  <dt id="bundle">组合包（bundle）</dt>
+  <dd>厂商预制并随 npm 包分发的「一摞插件行」。本质是一个普通 npm 包，其 package.json 里 <code>dsh.bundle.patch</code> 指向自己的 <code>cordis.patch.yml</code>。出厂有 <code>dsh-base</code>（地基：模型、工具、持久化、沙箱…约 70 行）、<code>dsh-web-app</code>（加浏览器界面）、<code>dsh-headless</code>（加一次性运行器）。<span class="src">packages/bundle/base/cordis.patch.yml</span></dd>
+
+  <dt id="profile">profile</dt>
+  <dd><code>~/.dsh/profiles/&lt;名字&gt;/</code> 下的一个<strong>目录</strong>：内含 package.json（<code>dsh.profile.bundles</code> 按序列出要叠的组合包 + 树外插件依赖）和自己的 <code>cordis.patch.yml</code>。<code>web</code>、<code>headless</code> 是随发行版交付的模板，装到你机器上后可随意改。<span class="src">packages/boot/app-boot/src/profile.ts:5</span></dd>
+
+  <dt id="patch">patch（cordis.patch.yml）</dt>
+  <dd>对插件清单的<strong>编辑指令</strong>，只有两种动词：<code>- insert:</code>（插入新行）与 <code>- id: xxx</code>（按 id <strong>整体替换</strong>该行的 config，不做字段合并，同 id 后写的赢）。层级顺序：各 bundle → profile 的 patch → home 级 patch → <code>--patch</code> 命令行叠加。<span class="src">packages/bundle/web-app/cordis.patch.yml</span></dd>
+
+  <dt id="harness-home">Harness home</dt>
+  <dd>dsh 的用户数据根目录：<code>~/.dsh</code>（Windows：<code>C:\Users\&lt;你&gt;\.dsh</code>）。profiles、凭据、会话数据都住这里。<span class="src">packages/boot/app-boot/src/index.ts</span></dd>
+
+  <dt id="preset">agent preset</dt>
+  <dd>让某个会话/agent 拥有不同能力集合的预组装配置（见 <code>apps/cli/config/agent-presets/</code>）。</dd>
+
+  <dt id="scope">scope（作用域）</dt>
+  <dd>把注册项限定到单个 agent 的原语：铸造带标签的子 Context，事件沿 WeakMap 父链向上流动。<span class="src">packages/core/scope/src/index.ts</span></dd>
+
+  <dt id="dispose">dispose（注销）</dt>
+  <dd>每项注册都返回精确的注销函数；插件卸载时按逆序执行。dsh 的铁律：注册与注销必须严格嵌套。</dd>
+
+  <dt id="subagent">subagent（子智能体）</dt>
+  <dd>由主 agent 派生的下级 agent；提供方接口统一，实现从「新建子 agent」到「把一轮委派给另一个产品（如 Claude Code）」不等。</dd>
+</dl>
+
+<div class="box note">
+  <p class="box-title">维护约定</p>
+  <p>课程中出现新术语时更新本卡；与官方术语表冲突时以官方为准并在此标注。完整官方表：<a href="../deepseek-harness/docs/glossary.zh.md">docs/glossary.zh.md</a>。</p>
+</div>
+
+</main>
+</body>
+</html>
