@@ -11,23 +11,41 @@
 
 <p class="kicker">DeepSeek Harness 精读 · 阶段 0 · 地图与运行</p>
 <h1>第 2 课 · 把 dsh 跑起来，亲眼看一个轮次</h1>
-<p class="lesson-meta">约 25 分钟 ｜ 动手实验课 ｜ 前置：完成第 1 课</p>
+<p class="lesson-meta">约 45–60 分钟（含首次构建的等待）｜ 动手实验课 ｜ 前置：完成第 1 课</p>
 
 <div class="box mission">
   <p class="box-title">为什么是这一课</p>
   <p>上一课你拿到的是解剖图，这一课是<strong>活体观察</strong>。从此课程里每个抽象概念（事件、工具调用、插件树）你都能在真实的运行时里指认出来——这是「读懂源码」和「背下名词」的分水岭。</p>
 </div>
 
-<h2><span class="sec-no">§0</span>准备（2 分钟）</h2>
-<ul>
-  <li>安装 Node.js（LTS 版本即可），终端里 <code>node --version</code> 能出版本号就行。</li>
-  <li><strong>可选但强烈推荐</strong>：一个 DeepSeek API Key（在 platform.deepseek.com 注册、充值几块钱）。没有 Key 也能完成实验一和实验四，但看不到完整的模型轮次。</li>
-</ul>
+<h2><span class="sec-no">§0</span>准备：装好工具（10 分钟）</h2>
+<ol>
+  <li><strong>Node.js 22.19+ 或 24+</strong>（硬性要求：低于此版本 <code>pnpm install</code> 会直接报引擎错误。从 <a href="https://nodejs.org">nodejs.org</a> 下载 LTS 安装包，或 <code>winget install OpenJS.NodeJS.LTS</code>）。验证：<code>node --version</code> 输出 v22.19.x / v24.x 及以上。</li>
+  <li><strong>pnpm</strong>（仓库锁定 <code>pnpm@11.7.0</code>，通过 Corepack 启用）：运行 <code>corepack enable</code>（报权限错误就用管理员终端重试，或改用 <code>npm install -g pnpm@11.7.0</code>）。验证：<code>pnpm --version</code> 输出 11.7.0。</li>
+  <li><strong>Git ≥ 2.26</strong>（你应该已有）：验证 <code>git --version</code>。</li>
+  <li><strong>可选但推荐</strong>：一个 DeepSeek API Key（在 platform.deepseek.com 注册、充值几块钱）。没有 Key 也能完成实验一和实验四，但看不到完整的模型轮次。</li>
+</ol>
+<p>以上要求来自官方开发指南 <a href="../deepseek-harness/docs/development.zh.md">docs/development.zh.md</a>——它判定「搭建完成」的标准是 <code>pnpm run typecheck</code> 成功退出，卡住时以它为准。</p>
 
-<h2><span class="sec-no">§1</span>实验一：启动（3 分钟）</h2>
-<p>在任意目录的终端里运行：</p>
-<pre><code>npx @deepseek-ai/dsh web</code></pre>
-<p>首次运行会下载安装包，稍等片刻。然后浏览器打开 <code>http://127.0.0.1:3080</code>。如果配了 API Key，在设置页的「模型提供方」里填入（带截图的官方指南：<a href="../deepseek-harness/docs/user/guide/providers.zh.md">docs/user/guide/providers.zh.md</a>）。</p>
+<h2><span class="sec-no">§1</span>实验一：从源码构建并启动（30–50 分钟，大部分在等）</h2>
+
+<div class="box note">
+  <p class="box-title">为什么用源码构建而不是 npx</p>
+  <p>本课程的使命是<strong>源码掌控</strong>：从今天起你手里的仓库就是运行时本体——改源码、改 patch，重启即生效；<code>--dump-config</code> 反映的是你这份源码叠出的树；后续所有课程（改码、写测试、提 PR）都在这同一环境。根 package.json 的 <code>dsh</code> 脚本就是直接用 tsx 跑 <code>apps/cli/src/bin.ts</code> 的源码——从源码运行是这个仓库的一等公民用法。</p>
+</div>
+
+<p>在仓库根目录依次执行：</p>
+<pre><code>cd deepseek-harness
+pnpm install        # 5–15 分钟：下载依赖，末尾自动安装 git 钩子
+pnpm run build      # 10–30 分钟：编译 host/client 两侧 + Web 前端
+pnpm dsh web        # 启动，浏览器打开 http://127.0.0.1:3080
+</code></pre>
+<p>如果配了 API Key，在设置页的「模型提供方」里填入（带截图的官方指南：<a href="../deepseek-harness/docs/user/guide/providers.zh.md">docs/user/guide/providers.zh.md</a>）。</p>
+
+<div class="box correction">
+  <p class="box-title">备线：构建受阻时先用 npx 完成观察（别让工具链卡死学习）</p>
+  <p>任一步骤报错修不动时，先跑 <code>npx @deepseek-ai/dsh web</code> 保证实验二、三完成——两种方式读写<strong>同一个 <code>~/.dsh</code></strong>，事件观察结果完全一致。但 npx 反映的是 npm 发布版，做不了 §4 的加餐实验；回头修好构建再切换回来（课程期间尽量只用一种方式，避免版本漂移弄脏 <code>~/.dsh</code>；真弄脏了删掉该目录重启即自动重建）。</p>
+</div>
 
 <h2><span class="sec-no">§2</span>实验二：触发一个真实轮次（5 分钟）</h2>
 <p>新建会话，给 agent 一个<strong>必须用工具</strong>才能完成的小任务，比如：</p>
@@ -59,13 +77,25 @@ macOS / Linux: ~/.dsh</code></pre>
 </ol>
 
 <h2><span class="sec-no">§4</span>实验四：看插件树的最终形态（5 分钟）</h2>
-<p>还记得架构文档那句「各层按顺序应用」让你困惑吗？现在看活体：</p>
-<pre><code>npx @deepseek-ai/dsh --profile web --dump-config</code></pre>
+<p>还记得架构文档那句「各层按顺序应用」吗？现在看活体：</p>
+<pre><code>pnpm dsh --profile web --dump-config
+# 若 pnpm 抢着解析了参数，改用：pnpm dsh -- --profile web --dump-config</code></pre>
 <p>它打印的是<strong>bundle → profile patch → home patch → --patch 逐层叠加后的最终插件树</strong>，大约 70 行。你看到的任何一行，都可以被你自己的 patch 按 id 替换掉。</p>
 
 <div class="box note">
   <p class="box-title">观察点（Windows 用户彩蛋）</p>
   <p>在这棵树里找 shell 相关的行：Windows 上你会看到 <code>pwsh</code>（PowerShell）工具行，而 Linux/macOS 上同一位置是 <code>bash</code> 行——因为出厂 patch 里写了平台条件表达式，每个系统恰好挂载一个 shell 栈。<strong>这就是「patch 不只是开关，还能带逻辑」的实证。</strong></p>
+</div>
+
+<div class="box mission">
+  <p class="box-title">源码构建专属加餐：改一行 patch，看树变化（5 分钟）</p>
+  <p>首次启动后，<code>~/.dsh/profiles/web/cordis.patch.yml</code> 已自动生成（初始内容是空列表 <code>[]</code>）。把它改成：</p>
+  <pre><code>- id: session-title
+  config:
+    fallbackMaxWords: 5
+    fallbackMaxBytes: 40
+    maxTitleBytes: 96</code></pre>
+  <p>重新 dump，在输出里搜索 <code>session-title</code>——<code>maxTitleBytes</code> 从 80 变成 96。注意我们<strong>重抄了整行的全部三个键</strong>：patch 是整行替换、不做字段合并，漏抄的键会丢。这是你第一次修改 dsh 的行为——改的是你机器上的存档层，删掉这几行即恢复原状。这个实验也提前回答了上一课的自测第 2 题。</p>
 </div>
 
 <h2>自测：三道题</h2>
@@ -103,9 +133,10 @@ macOS / Linux: ~/.dsh</code></pre>
   <p class="quiz-feedback why" hidden>对。它打印的是 bundle → profile patch → home patch → --patch <strong>逐层叠加后的最终结果</strong>。任何一行都可被更上层的 patch 按 id 替换——这就是你上一课问的「各层按顺序应用」的活体答案。</p>
 </div>
 
-<h2>收尾任务（2 分钟）</h2>
+<h2>收尾任务（5 分钟）</h2>
 <ul class="checklist">
   <li>确认你完成四个实验并在日志里亲眼见到全部 7 种事件。</li>
+  <li>去 <code>~/.dsh/profiles/</code> 走一圈，亲眼验证你上节课复述的目录结构：<code>web/</code>（package.json 点名 bundles + cordis.patch.yml）与旁边的 <code>node_modules/</code>。</li>
   <li>再打开 <a href="../deepseek-harness/packages/core/agent-loop/src/agent.ts">agent.ts</a> 第 38–46 行的 <code>type Phase</code>。对照你的 jsonl：<strong>Phase 的哪个分支的 turn/step 计数，对应你日志里 step 序号的递增？</strong>下一课我们开始把你会的 C/Python 语法映射到 TypeScript，目标就是读懂这十行。</li>
   <li>术语模糊时翻<a href="../reference/0001-dsh-glossary.html">术语卡</a>；模式对照翻<a href="../reference/0002-design-patterns.html">设计模式卡</a>。</li>
 </ul>

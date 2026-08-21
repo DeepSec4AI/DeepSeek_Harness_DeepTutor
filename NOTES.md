@@ -16,7 +16,7 @@
 - （L1 后新增）**工程基础与设计模式需补课**：用户自述完整工程代码看得少、设计模式不清楚——每逢模式首次出现，给「背景补丁」小节（一句话是什么 + 生活类比 + dsh 位置）；已建 reference/0002 设计模式参考卡；包管理/构建/测试等工程概念随用随补
 
 ## 课程路线图（草案，随 learning-records 动态调整）
-- 阶段 0 · 地图与运行：架构地图（L1）→ 跑起来看一次真实 turn（L2）
+- 阶段 0 · 地图与运行：架构地图（L1）→ 源码构建 + 跑起来看一次真实 turn（L2，含 pnpm/build 环境：Node 22.19+/24+、corepack pnpm@11.7.0）
 - 阶段 1 · TS 速成：C/Python → TS 映射（L3）→ 读码必备进阶特性（L4）
 - 阶段 2 · Cordis 框架：Context/插件（L5）→ Service/事件（L6）→ Fiber 生命周期（L7）
 - 阶段 3 · 产品脊柱：Session 事件溯源（L8）→ Agent 契约/Inbox（L9）→ ReactLoopAgent（L10–11）→ ToolRuntime（L12）→ SystemPrompt（L13）→ LLM seam（L14）
